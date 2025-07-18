@@ -41,7 +41,14 @@
             border-bottom: 2px solid #2a9d8f;
             padding-bottom: 10px;
         }
-        #location-list {
+        #search-bar {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        #location-list, #yellow-location-list {
             list-style-type: none;
             padding: 0;
             margin: 0;
@@ -70,7 +77,7 @@
         .list-item-distance { font-size: 14px; color: #666; }
         .hotel-item { background-color: #e8f8f5; border-left: 4px solid #2a9d8f; }
         .hotel-item .list-item-number { color: #2a9d8f; }
-
+        .yellow-item { background-color: #fff3cd; border-left: 4px solid #ffc107; } /* Yellow item style */
 
         /* --- Map Styles --- */
         #map {
@@ -135,7 +142,14 @@
 
     <div id="sidebar">
         <h1>📍 NYC Itinerary</h1>
+        <label>
+            <input type="checkbox" id="toggle-blue-locations" checked>
+            Show yellow and blue locations
+        </label>
+        <input type="text" id="search-bar" placeholder="Search locations..." />
         <ul id="location-list"></ul>
+        <h2>🌟 Other Attractions</h2>
+        <ul id="yellow-location-list"></ul>
     </div>
 
     <div id="map"></div>
@@ -146,8 +160,8 @@
         document.addEventListener('DOMContentLoaded', function () {
             // --- 1. DEFINE HOTEL AND LOCATION DATA ---
             const hotelLocation = { 
-                name: 'Your Hotel (Marriott Marquis)', 
-                coords: [40.7584, -73.9857] 
+                name: 'The Manhattan at Times Square Hotel', 
+                coords: [40.7621059,-73.9827546] // Updated coordinates for The Manhattan at Times Square Hotel
             };
 
             const locations = [
@@ -157,22 +171,69 @@
                 { id: 4, name: 'The Vessel', distance: '1.7 km', coords: [40.7537, -74.0022] },
                 { id: 5, name: 'Summit One Vanderbilt', distance: '1.2 km', coords: [40.7529, -73.9780] },
                 { id: 6, name: 'Edge', distance: '1.7 km', coords: [40.7539, -74.0014] },
-                { id: 7, name: 'Central Park South', distance: '1.1 km', coords: [40.7645, -73.9730] }, // Grand Army Plaza entrance
+                { id: 7, name: 'Central Park South', distance: '1.1 km', coords: [40.7645, -73.9730] },
                 { id: 8, name: '5th Avenue (Shopping)', distance: '1.0 km', coords: [40.7628, -73.9738] },
                 { id: 9, name: 'The Trump Building (40 Wall St)', distance: '6.0 km', coords: [40.7075, -74.0100] },
-                { id: 10, name: 'Brooklyn Bridge', distance: '5.5 km', coords: [40.7112, -74.0016] }, // Manhattan entrance
+                { id: 10, name: 'Brooklyn Bridge', distance: '5.5 km', coords: [40.7112, -74.0016] },
                 { id: 11, name: 'Chinatown', distance: '4.0 km', coords: [40.7180, -73.9980] },
                 { id: 12, name: 'Charging Bull / Wall St', distance: '6.2 km', coords: [40.7060, -74.0118] },
-                { id: 13, name: 'Statue of Liberty Ferry', distance: '6.5 km', coords: [40.7013, -74.0170] } // Ferry terminal at Battery Park
+                { id: 13, name: 'Statue of Liberty Ferry', distance: '6.5 km', coords: [40.7013, -74.0170] }
             ];
 
-            // --- 2. INITIALIZE THE MAP ---
+            // --- 2. ADDITIONAL YELLOW ATTRACTIONS ---
+            const yellowLocations = [
+                { id: 2, name: 'The High Line', distance: '2.5 km', coords: [40.7470, -74.0048] },
+                { id: 3, name: 'Museum of Modern Art', distance: '0 km', coords: [40.7614, -73.9776] },
+                { id: 4, name: 'The Met', distance: '2.8 km', coords: [40.7794, -73.9632] },
+                { id: 5, name: 'One World Observatory', distance: '6.0 km', coords: [40.7127, -74.0134] },
+                { id: 6, name: 'American Museum of Natural History', distance: '3.0 km', coords: [40.7813, -73.9735] },
+                { id: 7, name: 'Coney Island', distance: '14.0 km', coords: [40.5749, -73.9851] },
+                { id: 8, name: 'The Cloisters', distance: '8.0 km', coords: [40.8641, -73.9314] },
+                { id: 9, name: 'The Frick Collection', distance: '2.0 km', coords: [40.7712, -73.9665] },
+                { id: 10, name: 'New York Botanical Garden', distance: '12.0 km', coords: [40.8619, -73.8835] },
+                { id: 11, name: 'St. Patrick\'s Cathedral', distance: '1.5 km', coords: [40.7585, -73.9754] },
+                { id: 12, name: 'The Museum of the City of New York', distance: '3.5 km', coords: [40.7851, -73.9496] },
+                { id: 13, name: 'The New York Public Library', distance: '1.0 km', coords: [40.7532, -73.9822] },
+                { id: 14, name: 'The Intrepid Sea, Air & Space Museum', distance: '2.5 km', coords: [40.7642, -73.9992] },
+                { id: 15, name: 'The Whitney Museum of American Art', distance: '2.0 km', coords: [40.7396, -74.0089] },
+                { id: 16, name: 'The Brooklyn Museum', distance: '6.5 km', coords: [40.6712, -73.9633] },
+                { id: 17, name: 'The Bronx Zoo', distance: '12.0 km', coords: [40.8505, -73.8768] },
+                { id: 18, name: 'The New York Aquarium', distance: '14.0 km', coords: [40.5745, -73.9654] },
+                { id: 19, name: 'The Apollo Theater', distance: '9.0 km', coords: [40.8095, -73.9490] },
+                { id: 20, name: 'The New York Hall of Science', distance: '12.0 km', coords: [40.7495, -73.8445] },
+                { id: 21, name: 'The Rubin Museum of Art', distance: '2.5 km', coords: [40.7397, -73.9934] },
+                { id: 22, name: 'The Tenement Museum', distance: '3.0 km', coords: [40.7188, -73.9880] },
+                { id: 23, name: 'The Museum of Arts and Design', distance: '1.5 km', coords: [40.7831, -73.9814] },
+                { id: 24, name: 'The National September 11 Memorial & Museum', distance: '6.0 km', coords: [40.7115, -74.0134] },
+                { id: 25, name: 'The New York City Fire Museum', distance: '3.0 km', coords: [40.7190, -74.0070] },
+                { id: 26, name: 'The Morgan Library & Museum', distance: '1.5 km', coords: [40.7494, -73.9815] },
+                { id: 27, name: 'The New York City Museum', distance: '3.5 km', coords: [40.7851, -73.9496] },
+                { id: 28, name: 'The New York City Center', distance: '1.5 km', coords: [40.7400, -73.9830] },
+                { id: 29, name: 'The Staten Island Ferry', distance: '6.5 km', coords: [40.6495, -74.0732] },
+                { id: 30, name: 'The High Bridge', distance: '8.0 km', coords: [40.8440, -73.9350] },
+                { id: 31, name: 'The South Street Seaport', distance: '2.0 km', coords: [40.7074, -74.0032] },
+                { id: 32, name: 'The Battery Park', distance: '6.0 km', coords: [40.7033, -74.0170] },
+                { id: 33, name: 'The Flatiron Building', distance: '1.5 km', coords: [40.7411, -73.9897] },
+                { id: 34, name: 'The Chrysler Building', distance: '1.0 km', coords: [40.7516, -73.9755] },
+                { id: 35, name: 'The One World Trade Center', distance: '6.0 km', coords: [40.7127, -74.0134] },
+                { id: 36, name: 'The New York Times Building', distance: '1.0 km', coords: [40.7590, -73.9855] },
+                { id: 37, name: 'The United Nations Headquarters', distance: '1.5 km', coords: [40.7485, -73.9683] },
+                { id: 38, name: 'The Lincoln Center for the Performing Arts', distance: '2.0 km', coords: [40.7722, -73.9832] },
+                { id: 39, name: 'The Carnegie Hall', distance: '1.5 km', coords: [40.7651, -73.9819] },
+                // Newly added locations
+                { id: 40, name: 'Rockefeller Center', distance: '0.5 km', coords: [40.7587, -73.9787] },
+                { id: 41, name: 'The Oculus Mall', distance: '4.0 km', coords: [40.7116, -74.0097] },
+                { id: 42, name: 'Flatiron Building', distance: '1.5 km', coords: [40.7411, -73.9897] },
+                { id: 43, name: 'Chelsea Market', distance: '2.0 km', coords: [40.7424, -74.0062] }
+            ];
+
+            // --- 3. INITIALIZE THE MAP ---
             const map = L.map('map').setView([40.75, -73.98], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // --- 3. CREATE CUSTOM ICONS ---
+            // --- 4. CREATE CUSTOM ICONS ---
             const poiIcon = new L.Icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -181,20 +242,27 @@
             const hotelIcon = new L.Icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                iconSize: [35, 55], iconAnchor: [17, 55], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+            const yellowIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [12, 20], iconAnchor: [6, 20], popupAnchor: [1, -34], shadowSize: [20, 20] // 2x smaller
             });
 
             const markers = {};
             const locationList = document.getElementById('location-list');
+            const yellowLocationList = document.getElementById('yellow-location-list');
+            const toggleBlueLocations = document.getElementById('toggle-blue-locations');
 
-            // --- 4. ADD HOTEL TO THE MAP AND LIST ---
-            function addLocation(location, isHotel = false) {
-                const icon = isHotel ? hotelIcon : poiIcon;
-                const number = isHotel ? '🏨' : location.id;
+            // --- 5. ADD LOCATION FUNCTION ---
+            function addLocation(location, isHotel = false, isYellow = false) {
+                const icon = isHotel ? hotelIcon : (isYellow ? yellowIcon : poiIcon);
+                const number = isHotel ? '🏨' : (isYellow ? location.id : location.id);
 
                 // A. Create the list item
                 const listItem = document.createElement('li');
-                listItem.className = isHotel ? 'list-item hotel-item' : 'list-item';
+                listItem.className = isHotel ? 'list-item hotel-item' : (isYellow ? 'list-item yellow-item' : 'list-item');
                 listItem.dataset.id = isHotel ? 'hotel' : location.id;
                 const distanceText = isHotel ? 'Your Starting Point' : `${location.distance} from hotel`;
                 listItem.innerHTML = `
@@ -206,6 +274,8 @@
                 `;
                 if(isHotel) {
                     locationList.prepend(listItem); // Add hotel to the top of the list
+                } else if (isYellow) {
+                    yellowLocationList.appendChild(listItem); // Add yellow attractions to their list
                 } else {
                     locationList.appendChild(listItem);
                 }
@@ -224,7 +294,6 @@
                 // Create Google Maps Directions URL
                 const origin = `${hotelLocation.coords[0]},${hotelLocation.coords[1]}`;
                 const destination = `${location.coords[0]},${location.coords[1]}`;
-                // ✨ CORRECTED URL
                 const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=walking`;
                 
                 // Add popup with "Get Directions" link
@@ -232,7 +301,6 @@
                     <div class="popup-name">${location.name}</div>
                     <div class="popup-distance">${distanceText}</div>
                 `;
-                // Only add directions link for points of interest, not the hotel itself
                 if (!isHotel) {
                      popupContent += `<a href="${directionsUrl}" target="_blank" class="directions-link">Get Directions</a>`;
                 }
@@ -250,10 +318,40 @@
                 marker.on('mouseout', () => listItem.classList.remove('highlight'));
             }
 
-            // --- 5. POPULATE THE MAP AND LIST ---
+            // --- 6. POPULATE THE MAP AND LIST ---
             addLocation(hotelLocation, true); // Add the hotel first
             locations.forEach(loc => addLocation(loc, false)); // Then add all other POIs
+            yellowLocations.forEach(loc => addLocation(loc, false, true)); // Add yellow attractions
+
+            // --- 7. SEARCH FUNCTIONALITY ---
+            const searchBar = document.getElementById('search-bar');
+            searchBar.addEventListener('input', function() {
+                const searchTerm = searchBar.value.toLowerCase();
+                const allItems = [...locationList.children, ...yellowLocationList.children];
+
+                allItems.forEach(item => {
+                    const itemName = item.querySelector('.list-item-name').textContent.toLowerCase();
+                    if (itemName.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+
+            // --- 8. TOGGLE BLUE LOCATIONS ---
+            toggleBlueLocations.addEventListener('change', function() {
+                const showBlue = toggleBlueLocations.checked;
+                yellowLocations.forEach((loc, index) => {
+                    if (showBlue) {
+                        markers[loc.id].addTo(map);
+                    } else {
+                        map.removeLayer(markers[loc.id]);
+                    }
+                });
+            });
         });
+        
     </script>
 </body>
 </html>
