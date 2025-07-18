@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Interactive Itinerary v2</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Basic Page Styles --- */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f4f4f4;
+        }
+
+        /* --- Sidebar / Location List Styles --- */
+        #sidebar {
+            width: 380px;
+            background: #ffffff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0; /* Prevents sidebar from shrinking */
+        }
+        #sidebar h1 {
+            font-size: 24px;
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #2a9d8f;
+            padding-bottom: 10px;
+        }
+        #location-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+        }
+        .list-item:hover, .list-item.highlight {
+            background-color: #e9f5ff;
+        }
+        .list-item-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+            margin-right: 15px;
+            min-width: 25px;
+            text-align: center;
+        }
+        .list-item-details { display: flex; flex-direction: column; }
+        .list-item-name { font-size: 16px; font-weight: bold; color: #333; }
+        .list-item-distance { font-size: 14px; color: #666; }
+        .hotel-item { background-color: #e8f8f5; border-left: 4px solid #2a9d8f; }
+        .hotel-item .list-item-number { color: #2a9d8f; }
+
+
+        /* --- Map Styles --- */
+        #map {
+            flex-grow: 1;
+            height: 100vh;
+        }
+        
+        /* --- Permanent Tooltip (Title) Styles --- */
+        .leaflet-tooltip.permanent-title {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        /* --- Popup Styles for "Get Directions" --- */
+        .leaflet-popup-content-wrapper { border-radius: 8px; }
+        .leaflet-popup-content { font-size: 14px; text-align: center; margin: 10px 15px; }
+        .popup-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .popup-distance { font-size: 13px; color: #555; margin-bottom: 12px; }
+        .directions-link {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .directions-link:hover { background-color: #0056b3; }
+
+        /* --- ✨ MOBILE RESPONSIVE STYLES ✨ --- */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column; /* Stack sidebar and map vertically */
+                height: auto;
+                overflow: auto; /* Allow the page to scroll */
+            }
+
+            #sidebar {
+                width: 100%; /* Make sidebar take full width */
+                max-height: 45vh; /* Limit its height so map is visible */
+                box-sizing: border-box; /* Include padding in width calculation */
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Adjust shadow for top bar */
+            }
+
+            #map {
+                height: 55vh; /* Set a specific height for the map */
+                width: 100%;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h1>📍 NYC Itinerary</h1>
+        <ul id="location-list"></ul>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- 1. DEFINE HOTEL AND LOCATION DATA ---
+            const hotelLocation = { 
+                name: 'Your Hotel (Marriott Marquis)', 
+                coords: [40.7584, -73.9857] 
+            };
+
+            const locations = [
+                { id: 1, name: 'Times Square', distance: '0.1 km', coords: [40.7580, -73.9855] },
+                { id: 2, name: 'Grand Central Terminal', distance: '1.1 km', coords: [40.7527, -73.9772] },
+                { id: 3, name: 'Empire State Building', distance: '1.2 km', coords: [40.7484, -73.9857] },
+                { id: 4, name: 'The Vessel', distance: '1.7 km', coords: [40.7537, -74.0022] },
+                { id: 5, name: 'Summit One Vanderbilt', distance: '1.2 km', coords: [40.7529, -73.9780] },
+                { id: 6, name: 'Edge', distance: '1.7 km', coords: [40.7539, -74.0014] },
+                { id: 7, name: 'Central Park South', distance: '1.1 km', coords: [40.7645, -73.9730] }, // Grand Army Plaza entrance
+                { id: 8, name: '5th Avenue (Shopping)', distance: '1.0 km', coords: [40.7628, -73.9738] },
+                { id: 9, name: 'The Trump Building (40 Wall St)', distance: '6.0 km', coords: [40.7075, -74.0100] },
+                { id: 10, name: 'Brooklyn Bridge', distance: '5.5 km', coords: [40.7112, -74.0016] }, // Manhattan entrance
+                { id: 11, name: 'Chinatown', distance: '4.0 km', coords: [40.7180, -73.9980] },
+                { id: 12, name: 'Charging Bull / Wall St', distance: '6.2 km', coords: [40.7060, -74.0118] },
+                { id: 13, name: 'Statue of Liberty Ferry', distance: '6.5 km', coords: [40.7013, -74.0170] } // Ferry terminal at Battery Park
+            ];
+
+            // --- 2. INITIALIZE THE MAP ---
+            const map = L.map('map').setView([40.75, -73.98], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // --- 3. CREATE CUSTOM ICONS ---
+            const poiIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+            const hotelIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+
+            const markers = {};
+            const locationList = document.getElementById('location-list');
+
+            // --- 4. ADD HOTEL TO THE MAP AND LIST ---
+            function addLocation(location, isHotel = false) {
+                const icon = isHotel ? hotelIcon : poiIcon;
+                const number = isHotel ? '🏨' : location.id;
+
+                // A. Create the list item
+                const listItem = document.createElement('li');
+                listItem.className = isHotel ? 'list-item hotel-item' : 'list-item';
+                listItem.dataset.id = isHotel ? 'hotel' : location.id;
+                const distanceText = isHotel ? 'Your Starting Point' : `${location.distance} from hotel`;
+                listItem.innerHTML = `
+                    <span class="list-item-number">${number}</span>
+                    <div class="list-item-details">
+                        <span class="list-item-name">${location.name}</span>
+                        <span class="list-item-distance">${distanceText}</span>
+                    </div>
+                `;
+                if(isHotel) {
+                    locationList.prepend(listItem); // Add hotel to the top of the list
+                } else {
+                    locationList.appendChild(listItem);
+                }
+
+                // B. Create the map marker with permanent title and popup
+                const marker = L.marker(location.coords, { icon: icon }).addTo(map);
+                
+                // Add permanent title
+                marker.bindTooltip(location.name, { 
+                    permanent: true, 
+                    direction: 'top', 
+                    offset: [0, -41], // Adjusted offset for better visibility
+                    className: 'permanent-title'
+                }).openTooltip();
+
+                // Create Google Maps Directions URL
+                const origin = `${hotelLocation.coords[0]},${hotelLocation.coords[1]}`;
+                const destination = `${location.coords[0]},${location.coords[1]}`;
+                // ✨ CORRECTED URL
+                const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=walking`;
+                
+                // Add popup with "Get Directions" link
+                let popupContent = `
+                    <div class="popup-name">${location.name}</div>
+                    <div class="popup-distance">${distanceText}</div>
+                `;
+                // Only add directions link for points of interest, not the hotel itself
+                if (!isHotel) {
+                     popupContent += `<a href="${directionsUrl}" target="_blank" class="directions-link">Get Directions</a>`;
+                }
+                marker.bindPopup(popupContent);
+
+                // C. Link list and marker for interactivity
+                markers[listItem.dataset.id] = marker;
+                listItem.addEventListener('mouseover', () => marker.openPopup());
+                listItem.addEventListener('mouseout', () => marker.closePopup());
+                listItem.addEventListener('click', () => { // Center map on click
+                    map.setView(location.coords, 16);
+                    marker.openPopup();
+                });
+                marker.on('mouseover', () => listItem.classList.add('highlight'));
+                marker.on('mouseout', () => listItem.classList.remove('highlight'));
+            }
+
+            // --- 5. POPULATE THE MAP AND LIST ---
+            addLocation(hotelLocation, true); // Add the hotel first
+            locations.forEach(loc => addLocation(loc, false)); // Then add all other POIs
+        });
+    </script>
+</body>
+</html>
