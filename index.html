@@ -12,183 +12,123 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        /* --- Animation for Current Location Circle --- */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(2.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
         /* --- Fullscreen Overlay Styles --- */
         #fullscreen-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(128, 128, 128, 0.5); /* Semi-transparent grey background */
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(128, 128, 128, 0.5); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
             cursor: pointer;
         }
         #start-text {
-            font-size: 24px;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 20px 40px;
-            border-radius: 10px;
-            text-align: center;
+            font-size: 24px; color: white; background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px 40px; border-radius: 10px; text-align: center;
         }
 
         /* --- Basic Page Styles --- */
         body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            background-color: #f4f4f4;
+            font-family: 'Roboto', sans-serif; margin: 0; padding: 0;
+            display: flex; height: 100vh; overflow: hidden; background-color: #f4f4f4;
         }
 
-        /* --- Sidebar / Location List Styles --- */
+        /* --- Sidebar Styles --- */
         #sidebar {
-            width: 380px;
-            background: #ffffff;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
+            width: 380px; background: #ffffff; padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1); overflow-y: auto;
+            display: flex; flex-direction: column; flex-shrink: 0;
         }
         #sidebar h1 {
-            font-size: 24px;
-            margin-top: 0;
-            color: #333;
-            border-bottom: 2px solid #2a9d8f;
-            padding-bottom: 10px;
+            font-size: 24px; margin-top: 0; color: #333;
+            border-bottom: 2px solid #2a9d8f; padding-bottom: 10px;
         }
         #filter-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 15px 0;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
+            display: flex; flex-direction: column; gap: 10px; margin: 15px 0;
+            padding: 10px; background-color: #f9f9f9; border-radius: 5px;
         }
         #search-bar {
-            width: calc(100% - 22px); /* Full width minus padding */
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
+            width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc;
+            border-radius: 4px; font-size: 16px;
         }
         #location-list, #yellow-location-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
+            list-style-type: none; padding: 0; margin: 0;
         }
         .list-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
+            padding: 10px 15px; border-bottom: 1px solid #eee; cursor: pointer;
+            transition: background-color 0.2s ease-in-out; display: flex;
+            align-items: center; justify-content: space-between; gap: 10px;
         }
-        .list-item:hover, .list-item.highlight {
-            background-color: #e9f5ff;
+        .list-item:hover, .list-item.highlight { background-color: #e9f5ff; }
+        .list-item.visited .list-item-content {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        .list-item-content {
+            display: flex; align-items: center;
         }
         .list-item-number {
-            font-size: 18px;
-            font-weight: bold;
-            color: #007bff;
-            margin-right: 15px;
-            min-width: 25px;
-            text-align: center;
+            font-size: 18px; font-weight: bold; color: #007bff;
+            margin-right: 15px; min-width: 25px; text-align: center;
         }
         .list-item-details { display: flex; flex-direction: column; }
         .list-item-name { font-size: 16px; font-weight: bold; color: #333; }
         .list-item-distance { font-size: 14px; color: #666; }
+        .list-item-actions { display: flex; gap: 15px; }
+        .list-item-actions label { cursor: pointer; font-size: 20px; }
+        .list-item-actions input { display: none; } /* Hide actual checkbox */
+        
         .hotel-item { background-color: #e8f8f5; border-left: 4px solid #2a9d8f; }
         .hotel-item .list-item-number { color: #2a9d8f; }
         .yellow-item { background-color: #fff3cd; border-left: 4px solid #ffc107; }
 
         /* --- Map Styles --- */
-        #map {
-            flex-grow: 1;
-            height: 100vh;
-        }
-        
-        /* --- Permanent Tooltip (Title) Styles --- */
+        #map { flex-grow: 1; height: 100vh; }
         .leaflet-tooltip.permanent-title {
-            background-color: rgba(255, 255, 255, 0.8);
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 2px 5px;
-            font-size: 11px;
-            font-weight: 500;
-            color: #333;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            background-color: rgba(255, 255, 255, 0.8); border: 1px solid #ccc;
+            border-radius: 4px; padding: 2px 5px; font-size: 11px;
+            font-weight: 500; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             white-space: nowrap;
         }
-
-        /* --- Popup Styles for "Get Directions" --- */
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { font-size: 14px; text-align: center; margin: 10px 15px; }
         .popup-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
         .popup-distance { font-size: 13px; color: #555; margin-bottom: 12px; }
         .directions-link {
-            display: inline-block;
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: 500;
-            transition: background-color 0.2s;
+            display: inline-block; padding: 8px 15px; background-color: #007bff;
+            color: white !important; text-decoration: none; border-radius: 5px;
+            font-weight: 500; transition: background-color 0.2s;
         }
         .directions-link:hover { background-color: #0056b3; }
+        .current-location-pulse {
+            background-color: rgba(255, 0, 0, 0.2); border-radius: 50%;
+            width: 20px; height: 20px;
+            animation: pulse 2s infinite;
+        }
 
-        /* --- ✨ MOBILE RESPONSIVE STYLES ✨ --- */
+        /* --- Responsive Styles --- */
         @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-                height: auto;
-                overflow: auto;
-            }
-            #sidebar {
-                width: 100%;
-                max-height: 45vh;
-                box-sizing: border-box;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            }
-            #map {
-                height: 55vh;
-                width: 100%;
-            }
+            body { flex-direction: column; height: auto; overflow: auto; }
+            #sidebar { width: 100%; max-height: 45vh; box-sizing: border-box; }
+            #map { height: 55vh; width: 100%; }
         }
     </style>
 </head>
 <body>
     
-    <div id="fullscreen-overlay">
-        <div id="start-text">Tap on screen to start</div>
-    </div>
+    <div id="fullscreen-overlay"><div id="start-text">Tap screen to start</div></div>
 
     <div id="sidebar">
         <h1>📍 NYC Itinerary</h1>
-        
         <input type="text" id="search-bar" placeholder="Search locations..." />
-        
         <div id="filter-controls">
-            <label>
-                <input type="checkbox" id="toggle-main-locations" checked>
-                Show Main Itinerary 🗺️
-            </label>
-            <label>
-                <input type="checkbox" id="toggle-yellow-locations" checked>
-                Show Other Attractions ⭐
-            </label>
+            <label><input type="checkbox" id="toggle-main-locations" checked> Show Main Itinerary 🗺️</label>
+            <label><input type="checkbox" id="toggle-yellow-locations" checked> Show Other Attractions ⭐</label>
         </div>
-
         <ul id="location-list"></ul>
         <h2 id="yellow-header">🌟 Other Attractions</h2>
         <ul id="yellow-location-list"></ul>
@@ -202,26 +142,36 @@
         document.addEventListener('DOMContentLoaded', function () {
             // --- Fullscreen functionality ---
             const fullscreenOverlay = document.getElementById('fullscreen-overlay');
-            fullscreenOverlay.addEventListener('click', function() {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen();
-                } else if (document.documentElement.mozRequestFullScreen) { // Firefox
-                    document.documentElement.mozRequestFullScreen();
-                } else if (document.documentElement.webkitRequestFullscreen) { // Chrome, Safari, Opera
-                    document.documentElement.webkitRequestFullscreen();
-                } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
-                    document.documentElement.msRequestFullscreen();
-                }
-                fullscreenOverlay.style.display = 'none'; // Hide the overlay
+            fullscreenOverlay.addEventListener('click', () => {
+                document.documentElement.requestFullscreen?.();
+                fullscreenOverlay.style.display = 'none';
             });
 
-            // --- 1. DEFINE HOTEL AND LOCATION DATA ---
-            const hotelLocation = {
-                name: 'The Manhattan at Times Square Hotel',
-                coords: [40.7621059, -73.9827546]
+            // --- 0. COOKIE & STATE MANAGEMENT ---
+            const getCookie = name => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            };
+            const setCookie = (name, value, days) => {
+                let expires = "";
+                if (days) {
+                    const date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = "; expires=" + date.toUTCString();
+                }
+                document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
             };
 
-            const locations = [
+            let locationStates = JSON.parse(getCookie('locationStates')) || {};
+
+            const saveStates = () => {
+                setCookie('locationStates', JSON.stringify(locationStates), 365);
+            };
+            
+            // --- 1. DATA DEFINITIONS ---
+            const hotelLocation = { name: 'The Manhattan at Times Square Hotel', coords: [40.7621059, -73.9827546] };
+            const locations = [ /* Main itinerary locations */ 
                 { id: 1, name: 'Times Square', distance: '0.1 km', coords: [40.7580, -73.9855] },
                 { id: 2, name: 'Grand Central Terminal', distance: '1.1 km', coords: [40.7527, -73.9772] },
                 { id: 3, name: 'Empire State Building', distance: '1.2 km', coords: [40.7484, -73.9857] },
@@ -241,8 +191,7 @@
                 { id: 41, name: 'The Oculus Mall', distance: '4.0 km', coords: [40.7116, -74.0097] },
                 { id: 42, name: 'Chelsea Market', distance: '2.0 km', coords: [40.7424, -74.0062] }
             ];
-
-            const yellowLocations = [
+            const yellowLocations = [ /* Other attractions */
                 { id: 1, name: 'The High Line', distance: '2.5 km', coords: [40.7470, -74.0048] },
                 { id: 2, name: 'Museum of Modern Art (MoMA)', distance: '0 km', coords: [40.7614, -73.9776] },
                 { id: 3, name: 'The Metropolitan Museum of Art (The Met)', distance: '2.8 km', coords: [40.7794, -73.9632] },
@@ -257,128 +206,151 @@
                 { id: 12, name: 'The Chrysler Building', distance: '1.0 km', coords: [40.7516, -73.9755] },
             ];
 
-            // --- 2. INITIALIZE THE MAP ---
+            // --- 2. MAP & ICONS INITIALIZATION ---
             const map = L.map('map').setView([40.75, -73.98], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // --- 3. CREATE CUSTOM ICONS ---
             const createIcon = (url, size, anchor) => new L.Icon({
-                iconUrl: url,
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconUrl: url, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                 iconSize: size, iconAnchor: anchor, popupAnchor: [1, -34], shadowSize: [size[0] + 16, size[1]]
             });
             const poiIcon = createIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', [25, 41], [12, 41]);
             const hotelIcon = createIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', [35, 55], [17, 55]);
             const yellowIcon = createIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png', [25, 41], [12, 41]);
             
-            // --- 4. DOM & DATA REFERENCES ---
+            // --- 3. DOM & DATA REFERENCES ---
             const markers = {};
             const locationList = document.getElementById('location-list');
             const yellowLocationList = document.getElementById('yellow-location-list');
 
-            // --- 5. ADD LOCATION FUNCTION ---
-            function addLocation(location, type) { // type can be 'hotel', 'main', 'yellow'
-                const isHotel = type === 'hotel';
-                const isYellow = type === 'yellow';
-                
+            // --- 4. ADD LOCATION FUNCTION ---
+            function addLocation(location, type) {
+                const isHotel = type === 'hotel', isYellow = type === 'yellow';
                 const icon = isHotel ? hotelIcon : (isYellow ? yellowIcon : poiIcon);
                 const number = isHotel ? '🏨' : location.id;
                 const markerId = isHotel ? 'hotel' : `${isYellow ? 'y' : 'b'}-${location.id}`;
 
-                // A. Create the list item
                 const listItem = document.createElement('li');
                 listItem.className = `list-item ${isHotel ? 'hotel-item' : (isYellow ? 'yellow-item' : '')}`;
                 listItem.dataset.id = markerId;
-                const distanceText = isHotel ? 'Your Starting Point' : `${location.distance} from hotel`;
-                
-                listItem.innerHTML = `
-                    <span class="list-item-number">${number}</span>
-                    <div class="list-item-details">
-                        <span class="list-item-name">${location.name}</span>
-                        <span class="list-item-distance">${distanceText}</span>
-                    </div>`;
-                
-                if (isHotel) {
-                    locationList.prepend(listItem);
-                } else if (isYellow) {
-                    yellowLocationList.appendChild(listItem);
-                } else {
-                    locationList.appendChild(listItem);
-                }
 
-                // B. Create the map marker
+                const distanceText = isHotel ? 'Your Starting Point' : `${location.distance} from hotel`;
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <span class="list-item-number">${number}</span>
+                        <div class="list-item-details">
+                            <span class="list-item-name">${location.name}</span>
+                            <span class="list-item-distance">${distanceText}</span>
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        ${!isHotel ? `
+                        <label title="Visited"><input type="checkbox" data-action="visited">✅</label>
+                        <label title="Want to Go"><input type="checkbox" data-action="wantToGo">⭐</label>
+                        ` : ''}
+                    </div>`;
+
+                if (isHotel) locationList.prepend(listItem);
+                else if (isYellow) yellowLocationList.appendChild(listItem);
+                else locationList.appendChild(listItem);
+                
+                // Add Marker
                 const marker = L.marker(location.coords, { icon: icon }).addTo(map);
-                marker.bindTooltip(location.name, { 
-                    permanent: true, direction: 'top', offset: [0, -icon.options.iconAnchor[1]], className: 'permanent-title' 
-                }).openTooltip();
+                marker.bindTooltip(location.name, { permanent: true, direction: 'top', offset: [0, -icon.options.iconAnchor[1]], className: 'permanent-title' }).openTooltip();
                 
-                // Create Google Maps Directions URL
-                const origin = `${hotelLocation.coords[0]},${hotelLocation.coords[1]}`;
-                const destination = `${location.coords[0]},${location.coords[1]}`;
-                const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=walking`;
-                
+                const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=$?saddr=${hotelLocation.coords.join(',')}&daddr=${location.coords.join(',')}&travelmode=walking`;
                 let popupContent = `<div class="popup-name">${location.name}</div><div class="popup-distance">${distanceText}</div>`;
-                if (!isHotel) {
-                    popupContent += `<a href="${directionsUrl}" target="_blank" class="directions-link">Get Directions</a>`;
-                }
+                if (!isHotel) popupContent += `<a href="${directionsUrl}" target="_blank" class="directions-link">Get Directions</a>`;
                 marker.bindPopup(popupContent);
 
-                // C. Link list and marker
                 markers[markerId] = marker;
-                listItem.addEventListener('mouseover', () => marker.openPopup());
-                listItem.addEventListener('mouseout', () => marker.closePopup());
-                listItem.addEventListener('click', () => {
+                listItem.querySelector('.list-item-content')?.addEventListener('click', () => {
                     map.setView(location.coords, 16);
                     marker.openPopup();
                 });
-                marker.on('mouseover', () => listItem.classList.add('highlight'));
-                marker.on('mouseout', () => listItem.classList.remove('highlight'));
+
+                // Set checkbox states from cookies and add event listeners
+                if (!isHotel) {
+                    const state = locationStates[markerId] || { visited: false, wantToGo: false };
+                    const visitedCheckbox = listItem.querySelector('[data-action="visited"]');
+                    const wantToGoCheckbox = listItem.querySelector('[data-action="wantToGo"]');
+
+                    visitedCheckbox.checked = state.visited;
+                    wantToGoCheckbox.checked = state.wantToGo;
+                    if (state.visited) listItem.classList.add('visited');
+                    
+                    [visitedCheckbox, wantToGoCheckbox].forEach(cb => {
+                        cb.addEventListener('change', (e) => {
+                            const action = e.target.dataset.action;
+                            if (!locationStates[markerId]) locationStates[markerId] = {};
+                            locationStates[markerId][action] = e.target.checked;
+                            saveStates();
+                            listItem.classList.toggle('visited', visitedCheckbox.checked);
+                        });
+                    });
+                }
             }
 
-            // --- 6. POPULATE THE MAP AND LIST ---
+            // --- 5. POPULATE MAP & LIST ---
             addLocation(hotelLocation, 'hotel');
             locations.forEach(loc => addLocation(loc, 'main'));
             yellowLocations.forEach(loc => addLocation(loc, 'yellow'));
-
-            // --- 7. SEARCH FUNCTIONALITY ---
-            const searchBar = document.getElementById('search-bar');
-            searchBar.addEventListener('input', function() {
-                const searchTerm = searchBar.value.toLowerCase();
+            
+            // --- 6. USER INTERACTION HANDLERS ---
+            // Search
+            document.getElementById('search-bar').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
                 document.querySelectorAll('.list-item').forEach(item => {
                     const itemName = item.querySelector('.list-item-name').textContent.toLowerCase();
-                    // Don't hide hotel or filtered-out items
                     if (item.style.display !== 'none' || item.classList.contains('hotel-item')) {
                        item.style.display = itemName.includes(searchTerm) ? 'flex' : 'none';
                     }
                 });
             });
 
-            // --- 8. TOGGLE VISIBILITY FUNCTIONALITY ---
+            // Category Toggles
             const toggleMainCheckbox = document.getElementById('toggle-main-locations');
             const toggleYellowCheckbox = document.getElementById('toggle-yellow-locations');
             const yellowHeader = document.getElementById('yellow-header');
 
             function toggleCategory(show, locationArray, prefix, listElement, headerElement = null) {
                 if (headerElement) headerElement.style.display = show ? '' : 'none';
-
                 locationArray.forEach(loc => {
                     const markerId = `${prefix}-${loc.id}`;
-                    const marker = markers[markerId];
+                    if (markers[markerId]) show ? markers[markerId].addTo(map) : map.removeLayer(markers[markerId]);
                     const listItem = listElement.querySelector(`[data-id="${markerId}"]`);
-                    
-                    if (marker) show ? marker.addTo(map) : map.removeLayer(marker);
                     if (listItem) listItem.style.display = show ? 'flex' : 'none';
                 });
             }
 
-            toggleMainCheckbox.addEventListener('change', e => {
-                toggleCategory(e.target.checked, locations, 'b', locationList);
-            });
+            toggleMainCheckbox.addEventListener('change', e => toggleCategory(e.target.checked, locations, 'b', locationList));
+            toggleYellowCheckbox.addEventListener('change', e => toggleCategory(e.target.checked, yellowLocations, 'y', yellowLocationList, yellowHeader));
 
-            toggleYellowCheckbox.addEventListener('change', e => {
-                toggleCategory(e.target.checked, yellowLocations, 'y', yellowLocationList, yellowHeader);
+            // --- 7. GET USER'S CURRENT LOCATION ---
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                const userLatLng = [latitude, longitude];
+                
+                // Add a simple red dot
+                L.circle(userLatLng, {
+                    color: 'red', fillColor: '#f03', fillOpacity: 0.8, radius: 10
+                }).addTo(map);
+
+                // Add a pulsing circle for visibility
+                L.circle(userLatLng, {
+                    color: 'transparent', fillColor: 'red', fillOpacity: 0.3, radius: 400
+                }).addTo(map)._path.classList.add('current-location-pulse');
+
+                L.marker(userLatLng, {
+                    icon: L.divIcon({className: 'current-location-marker'})
+                }).addTo(map).bindPopup("You are here").openPopup();
+
+                map.setView(userLatLng, 14);
+
+            }, () => {
+                console.log("Could not get user location.");
             });
         });
     </script>
