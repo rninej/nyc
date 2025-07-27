@@ -1,79 +1,9 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NYC Interactive Itinerary v2</title>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NYC Interactive Itinerary v2</title>
-
-    <style>
-        /* Fullscreen Button Styles */
-        #fullscreen-button {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(128, 128, 128, 0.5); /* Semi-transparent grey background */
-            z-index: 9999; /* Ensure it is on top of other elements */
-        }
-
-        /* Centered Text Styles */
-        #start-text {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            color: #333;
-            z-index: 10000; /* Ensure it is above the button */
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="fullscreen-button"></div>
-    <div id="start-text">Tap on screen to start</div>
-
-    <script>
-        // Fullscreen functionality
-        const fullscreenButton = document.getElementById('fullscreen-button');
-        const startText = document.getElementById('start-text');
-
-        fullscreenButton.addEventListener('click', function() {
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            } else if (document.documentElement.mozRequestFullScreen) { // Firefox
-                document.documentElement.mozRequestFullScreen();
-            } else if (document.documentElement.webkitRequestFullscreen) { // Chrome, Safari and Opera
-                document.documentElement.webkitRequestFullscreen();
-            } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
-                document.documentElement.msRequestFullscreen();
-            }
-
-            // Hide the fullscreen button and start text after it is clicked
-            fullscreenButton.style.display = 'none';
-            startText.style.display = 'none';
-        });
-    </script>
-</body>
-</html>
-
-    </script>
-
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NYC Interactive Itinerary v2</title>
+    <title>NYC Interactive Itinerary</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
@@ -82,6 +12,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        /* --- Fullscreen Overlay Styles --- */
+        #fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(128, 128, 128, 0.5); /* Semi-transparent grey background */
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        #start-text {
+            font-size: 24px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
         /* --- Basic Page Styles --- */
         body {
             font-family: 'Roboto', sans-serif;
@@ -102,7 +55,7 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            flex-shrink: 0; /* Prevents sidebar from shrinking */
+            flex-shrink: 0;
         }
         #sidebar h1 {
             font-size: 24px;
@@ -111,8 +64,17 @@
             border-bottom: 2px solid #2a9d8f;
             padding-bottom: 10px;
         }
+        #filter-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
         #search-bar {
-            margin-bottom: 15px;
+            width: calc(100% - 22px); /* Full width minus padding */
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -147,7 +109,7 @@
         .list-item-distance { font-size: 14px; color: #666; }
         .hotel-item { background-color: #e8f8f5; border-left: 4px solid #2a9d8f; }
         .hotel-item .list-item-number { color: #2a9d8f; }
-        .yellow-item { background-color: #fff3cd; border-left: 4px solid #ffc107; } /* Yellow item style */
+        .yellow-item { background-color: #fff3cd; border-left: 4px solid #ffc107; }
 
         /* --- Map Styles --- */
         #map {
@@ -188,37 +150,47 @@
         /* --- ✨ MOBILE RESPONSIVE STYLES ✨ --- */
         @media (max-width: 768px) {
             body {
-                flex-direction: column; /* Stack sidebar and map vertically */
+                flex-direction: column;
                 height: auto;
-                overflow: auto; /* Allow the page to scroll */
+                overflow: auto;
             }
-
             #sidebar {
-                width: 100%; /* Make sidebar take full width */
-                max-height: 45vh; /* Limit its height so map is visible */
-                box-sizing: border-box; /* Include padding in width calculation */
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Adjust shadow for top bar */
+                width: 100%;
+                max-height: 45vh;
+                box-sizing: border-box;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
-
             #map {
-                height: 55vh; /* Set a specific height for the map */
+                height: 55vh;
                 width: 100%;
             }
         }
-
     </style>
 </head>
 <body>
+    
+    <div id="fullscreen-overlay">
+        <div id="start-text">Tap on screen to start</div>
+    </div>
 
     <div id="sidebar">
         <h1>📍 NYC Itinerary</h1>
-        <label>
-            <input type="checkbox" id="toggle-blue-locations" checked>
-            Show yellow  locations
-        </label>
+        
         <input type="text" id="search-bar" placeholder="Search locations..." />
+        
+        <div id="filter-controls">
+            <label>
+                <input type="checkbox" id="toggle-main-locations" checked>
+                Show Main Itinerary 🗺️
+            </label>
+            <label>
+                <input type="checkbox" id="toggle-yellow-locations" checked>
+                Show Other Attractions ⭐
+            </label>
+        </div>
+
         <ul id="location-list"></ul>
-        <h2>🌟 Other Attractions</h2>
+        <h2 id="yellow-header">🌟 Other Attractions</h2>
         <ul id="yellow-location-list"></ul>
     </div>
 
@@ -228,10 +200,25 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- Fullscreen functionality ---
+            const fullscreenOverlay = document.getElementById('fullscreen-overlay');
+            fullscreenOverlay.addEventListener('click', function() {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
+                    document.documentElement.msRequestFullscreen();
+                }
+                fullscreenOverlay.style.display = 'none'; // Hide the overlay
+            });
+
             // --- 1. DEFINE HOTEL AND LOCATION DATA ---
-            const hotelLocation = { 
-                name: 'The Manhattan at Times Square Hotel', 
-                coords: [40.7621059,-73.9827546] // Updated coordinates for The Manhattan at Times Square Hotel
+            const hotelLocation = {
+                name: 'The Manhattan at Times Square Hotel',
+                coords: [40.7621059, -73.9827546]
             };
 
             const locations = [
@@ -244,8 +231,7 @@
                 { id: 7, name: 'Central Park South', distance: '1.1 km', coords: [40.7645, -73.9730] },
                 { id: 8, name: '5th Avenue (Shopping)', distance: '1.0 km', coords: [40.7628, -73.9738] },
                 { id: 9, name: 'The Trump Building (40 Wall St)', distance: '6.0 km', coords: [40.7075, -74.0100] },
-                { id: 10, name: 'Brooklyn Bridge and dumbo(under)', distance: '5.5 km', coords: [40.7112, -74.0016] },
-            
+                { id: 10, name: 'Brooklyn Bridge and DUMBO', distance: '5.5 km', coords: [40.7112, -74.0016] },
                 { id: 11, name: 'Chinatown', distance: '4.0 km', coords: [40.7180, -73.9980] },
                 { id: 12, name: 'Charging Bull / Wall St', distance: '6.2 km', coords: [40.7060, -74.0118] },
                 { id: 13, name: 'Statue of Liberty Ferry', distance: '6.5 km', coords: [40.7013, -74.0170] },
@@ -256,134 +242,94 @@
                 { id: 42, name: 'Chelsea Market', distance: '2.0 km', coords: [40.7424, -74.0062] }
             ];
 
-            // --- 2. ADDITIONAL YELLOW ATTRACTIONS ---
             const yellowLocations = [
-                { id: 2, name: 'The High Line', distance: '2.5 km', coords: [40.7470, -74.0048] },
-                { id: 3, name: 'Museum of Modern Art', distance: '0 km', coords: [40.7614, -73.9776] },
-                { id: 4, name: 'The Met', distance: '2.8 km', coords: [40.7794, -73.9632] },
-                { id: 5, name: 'One World Observatory', distance: '6.0 km', coords: [40.7127, -74.0134] },
-                { id: 6, name: 'American Museum of Natural History', distance: '3.0 km', coords: [40.7813, -73.9735] },
-                { id: 7, name: 'Coney Island', distance: '14.0 km', coords: [40.5749, -73.9851] },
-                { id: 8, name: 'The Cloisters', distance: '8.0 km', coords: [40.8641, -73.9314] },
-                { id: 9, name: 'The Frick Collection', distance: '2.0 km', coords: [40.7712, -73.9665] },
-                { id: 10, name: 'New York Botanical Garden', distance: '12.0 km', coords: [40.8619, -73.8835] },
-                { id: 11, name: 'St. Patrick\'s Cathedral', distance: '1.5 km', coords: [40.7585, -73.9754] },
-                { id: 12, name: 'The Museum of the City of New York', distance: '3.5 km', coords: [40.7851, -73.9496] },
-                { id: 13, name: 'The New York Public Library', distance: '1.0 km', coords: [40.7532, -73.9822] },
-                { id: 14, name: 'The Intrepid Sea, Air & Space Museum', distance: '2.5 km', coords: [40.7642, -73.9992] },
-                { id: 15, name: 'The Whitney Museum of American Art', distance: '2.0 km', coords: [40.7396, -74.0089] },
-                { id: 16, name: 'The Brooklyn Museum', distance: '6.5 km', coords: [40.6712, -73.9633] },
-                { id: 17, name: 'The Bronx Zoo', distance: '12.0 km', coords: [40.8505, -73.8768] },
-                { id: 18, name: 'The New York Aquarium', distance: '14.0 km', coords: [40.5745, -73.9654] },
-                { id: 19, name: 'The Apollo Theater', distance: '9.0 km', coords: [40.8095, -73.9490] },
-                { id: 20, name: 'The New York Hall of Science', distance: '12.0 km', coords: [40.7495, -73.8445] },
-                { id: 21, name: 'The Rubin Museum of Art', distance: '2.5 km', coords: [40.7397, -73.9934] },
-                { id: 22, name: 'The Tenement Museum', distance: '3.0 km', coords: [40.7188, -73.9880] },
-                { id: 23, name: 'The Museum of Arts and Design', distance: '1.5 km', coords: [40.7831, -73.9814] },
-                { id: 24, name: 'The National September 11 Memorial & Museum', distance: '6.0 km', coords: [40.7115, -74.0134] },
-                { id: 25, name: 'The New York City Fire Museum', distance: '3.0 km', coords: [40.7190, -74.0070] },
-                { id: 26, name: 'The Morgan Library & Museum', distance: '1.5 km', coords: [40.7494, -73.9815] },
-                { id: 27, name: 'The New York City Museum', distance: '3.5 km', coords: [40.7851, -73.9496] },
-                { id: 28, name: 'The New York City Center', distance: '1.5 km', coords: [40.7400, -73.9830] },
-                { id: 29, name: 'The Staten Island Ferry', distance: '6.5 km', coords: [40.6495, -74.0732] },
-                { id: 30, name: 'The High Bridge', distance: '8.0 km', coords: [40.8440, -73.9350] },
-                { id: 31, name: 'The South Street Seaport', distance: '2.0 km', coords: [40.7074, -74.0032] },
-                
-               
-                { id: 32, name: 'The Chrysler Building', distance: '1.0 km', coords: [40.7516, -73.9755] },
-                { id: 33, name: 'The One World Trade Center', distance: '6.0 km', coords: [40.7127, -74.0134] },
-                { id: 34, name: 'The New York Times Building', distance: '1.0 km', coords: [40.7590, -73.9855] },
-                { id: 35, name: 'The United Nations Headquarters', distance: '1.5 km', coords: [40.7485, -73.9683] },
-                { id: 36, name: 'The Lincoln Center for the Performing Arts', distance: '2.0 km', coords: [40.7722, -73.9832] },
-                { id: 37, name: 'The Carnegie Hall', distance: '1.5 km', coords: [40.7651, -73.9819] },
-                // Newly added locations
-               
+                { id: 1, name: 'The High Line', distance: '2.5 km', coords: [40.7470, -74.0048] },
+                { id: 2, name: 'Museum of Modern Art (MoMA)', distance: '0 km', coords: [40.7614, -73.9776] },
+                { id: 3, name: 'The Metropolitan Museum of Art (The Met)', distance: '2.8 km', coords: [40.7794, -73.9632] },
+                { id: 4, name: 'One World Observatory', distance: '6.0 km', coords: [40.7127, -74.0134] },
+                { id: 5, name: 'American Museum of Natural History', distance: '3.0 km', coords: [40.7813, -73.9735] },
+                { id: 6, name: 'St. Patrick\'s Cathedral', distance: '1.5 km', coords: [40.7585, -73.9754] },
+                { id: 7, name: 'The New York Public Library', distance: '1.0 km', coords: [40.7532, -73.9822] },
+                { id: 8, name: 'Intrepid Sea, Air & Space Museum', distance: '2.5 km', coords: [40.7642, -73.9992] },
+                { id: 9, name: 'The National September 11 Memorial & Museum', distance: '6.0 km', coords: [40.7115, -74.0134] },
+                { id: 10, name: 'The Morgan Library & Museum', distance: '1.5 km', coords: [40.7494, -73.9815] },
+                { id: 11, name: 'South Street Seaport', distance: '2.0 km', coords: [40.7074, -74.0032] },
+                { id: 12, name: 'The Chrysler Building', distance: '1.0 km', coords: [40.7516, -73.9755] },
             ];
 
-            // --- 3. INITIALIZE THE MAP ---
+            // --- 2. INITIALIZE THE MAP ---
             const map = L.map('map').setView([40.75, -73.98], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // --- 4. CREATE CUSTOM ICONS ---
-            const poiIcon = new L.Icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            // --- 3. CREATE CUSTOM ICONS ---
+            const createIcon = (url, size, anchor) => new L.Icon({
+                iconUrl: url,
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                iconSize: size, iconAnchor: anchor, popupAnchor: [1, -34], shadowSize: [size[0] + 16, size[1]]
             });
-            const hotelIcon = new L.Icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [35, 55], iconAnchor: [17, 55], popupAnchor: [1, -34], shadowSize: [41, 41]
-            });
-            const yellowIcon = new L.Icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [12, 20], iconAnchor: [6, 20], popupAnchor: [1, -34], shadowSize: [20, 20] // 2x smaller
-            });
-
+            const poiIcon = createIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', [25, 41], [12, 41]);
+            const hotelIcon = createIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', [35, 55], [17, 55]);
+            const yellowIcon = createIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png', [25, 41], [12, 41]);
+            
+            // --- 4. DOM & DATA REFERENCES ---
             const markers = {};
             const locationList = document.getElementById('location-list');
             const yellowLocationList = document.getElementById('yellow-location-list');
-            const toggleBlueLocations = document.getElementById('toggle-blue-locations');
 
             // --- 5. ADD LOCATION FUNCTION ---
-            function addLocation(location, isHotel = false, isYellow = false) {
+            function addLocation(location, type) { // type can be 'hotel', 'main', 'yellow'
+                const isHotel = type === 'hotel';
+                const isYellow = type === 'yellow';
+                
                 const icon = isHotel ? hotelIcon : (isYellow ? yellowIcon : poiIcon);
-                const number = isHotel ? '🏨' : (isYellow ? location.id : location.id);
+                const number = isHotel ? '🏨' : location.id;
+                const markerId = isHotel ? 'hotel' : `${isYellow ? 'y' : 'b'}-${location.id}`;
 
                 // A. Create the list item
                 const listItem = document.createElement('li');
-                listItem.className = isHotel ? 'list-item hotel-item' : (isYellow ? 'list-item yellow-item' : 'list-item');
-                listItem.dataset.id = isHotel ? 'hotel' : location.id;
+                listItem.className = `list-item ${isHotel ? 'hotel-item' : (isYellow ? 'yellow-item' : '')}`;
+                listItem.dataset.id = markerId;
                 const distanceText = isHotel ? 'Your Starting Point' : `${location.distance} from hotel`;
+                
                 listItem.innerHTML = `
                     <span class="list-item-number">${number}</span>
                     <div class="list-item-details">
                         <span class="list-item-name">${location.name}</span>
                         <span class="list-item-distance">${distanceText}</span>
-                    </div>
-                `;
-                if(isHotel) {
-                    locationList.prepend(listItem); // Add hotel to the top of the list
+                    </div>`;
+                
+                if (isHotel) {
+                    locationList.prepend(listItem);
                 } else if (isYellow) {
-                    yellowLocationList.appendChild(listItem); // Add yellow attractions to their list
+                    yellowLocationList.appendChild(listItem);
                 } else {
                     locationList.appendChild(listItem);
                 }
 
-                // B. Create the map marker with permanent title and popup
+                // B. Create the map marker
                 const marker = L.marker(location.coords, { icon: icon }).addTo(map);
-                
-                // Add permanent title
                 marker.bindTooltip(location.name, { 
-                    permanent: true, 
-                    direction: 'top', 
-                    offset: [0, -41], // Adjusted offset for better visibility
-                    className: 'permanent-title'
+                    permanent: true, direction: 'top', offset: [0, -icon.options.iconAnchor[1]], className: 'permanent-title' 
                 }).openTooltip();
-
+                
                 // Create Google Maps Directions URL
                 const origin = `${hotelLocation.coords[0]},${hotelLocation.coords[1]}`;
                 const destination = `${location.coords[0]},${location.coords[1]}`;
                 const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=walking`;
                 
-                // Add popup with "Get Directions" link
-                let popupContent = `
-                    <div class="popup-name">${location.name}</div>
-                    <div class="popup-distance">${distanceText}</div>
-                `;
+                let popupContent = `<div class="popup-name">${location.name}</div><div class="popup-distance">${distanceText}</div>`;
                 if (!isHotel) {
-                     popupContent += `<a href="${directionsUrl}" target="_blank" class="directions-link">Get Directions</a>`;
+                    popupContent += `<a href="${directionsUrl}" target="_blank" class="directions-link">Get Directions</a>`;
                 }
                 marker.bindPopup(popupContent);
 
-                // C. Link list and marker for interactivity
-                markers[listItem.dataset.id] = marker;
+                // C. Link list and marker
+                markers[markerId] = marker;
                 listItem.addEventListener('mouseover', () => marker.openPopup());
                 listItem.addEventListener('mouseout', () => marker.closePopup());
-                listItem.addEventListener('click', () => { // Center map on click
+                listItem.addEventListener('click', () => {
                     map.setView(location.coords, 16);
                     marker.openPopup();
                 });
@@ -392,39 +338,49 @@
             }
 
             // --- 6. POPULATE THE MAP AND LIST ---
-            addLocation(hotelLocation, true); // Add the hotel first
-            locations.forEach(loc => addLocation(loc, false)); // Then add all other POIs
-            yellowLocations.forEach(loc => addLocation(loc, false, true)); // Add yellow attractions
+            addLocation(hotelLocation, 'hotel');
+            locations.forEach(loc => addLocation(loc, 'main'));
+            yellowLocations.forEach(loc => addLocation(loc, 'yellow'));
 
             // --- 7. SEARCH FUNCTIONALITY ---
             const searchBar = document.getElementById('search-bar');
             searchBar.addEventListener('input', function() {
                 const searchTerm = searchBar.value.toLowerCase();
-                const allItems = [...locationList.children, ...yellowLocationList.children];
-
-                allItems.forEach(item => {
+                document.querySelectorAll('.list-item').forEach(item => {
                     const itemName = item.querySelector('.list-item-name').textContent.toLowerCase();
-                    if (itemName.includes(searchTerm)) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
+                    // Don't hide hotel or filtered-out items
+                    if (item.style.display !== 'none' || item.classList.contains('hotel-item')) {
+                       item.style.display = itemName.includes(searchTerm) ? 'flex' : 'none';
                     }
                 });
             });
 
-            // --- 8. TOGGLE BLUE LOCATIONS ---
-            toggleBlueLocations.addEventListener('change', function() {
-                const showBlue = toggleBlueLocations.checked;
-                yellowLocations.forEach((loc, index) => {
-                    if (showBlue) {
-                        markers[loc.id].addTo(map);
-                    } else {
-                        map.removeLayer(markers[loc.id]);
-                    }
+            // --- 8. TOGGLE VISIBILITY FUNCTIONALITY ---
+            const toggleMainCheckbox = document.getElementById('toggle-main-locations');
+            const toggleYellowCheckbox = document.getElementById('toggle-yellow-locations');
+            const yellowHeader = document.getElementById('yellow-header');
+
+            function toggleCategory(show, locationArray, prefix, listElement, headerElement = null) {
+                if (headerElement) headerElement.style.display = show ? '' : 'none';
+
+                locationArray.forEach(loc => {
+                    const markerId = `${prefix}-${loc.id}`;
+                    const marker = markers[markerId];
+                    const listItem = listElement.querySelector(`[data-id="${markerId}"]`);
+                    
+                    if (marker) show ? marker.addTo(map) : map.removeLayer(marker);
+                    if (listItem) listItem.style.display = show ? 'flex' : 'none';
                 });
+            }
+
+            toggleMainCheckbox.addEventListener('change', e => {
+                toggleCategory(e.target.checked, locations, 'b', locationList);
+            });
+
+            toggleYellowCheckbox.addEventListener('change', e => {
+                toggleCategory(e.target.checked, yellowLocations, 'y', yellowLocationList, yellowHeader);
             });
         });
-        
     </script>
 </body>
 </html>
